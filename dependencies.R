@@ -15,7 +15,7 @@ if (length(new.packages)) {
 rm(new.packages)
 
 library(checkpoint)
-checkpoint(snapshotDate ='2019-10-16',checkpointLocation="C:\\Libraries\\R")
+checkpoint(snapshotDate ='2019-10-16')
 library(AMR)
 library(data.table)
 library(DT)
