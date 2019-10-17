@@ -8,7 +8,7 @@
 
 source('dependencies.R')
 # load all packages
-lapply(required_packages, require, character.only = TRUE)
+# lapply(required_packages, require, character.only = TRUE)
 
 # DATA TRANSFORMATION AND NEW VARIABLES -----------------------------------
 
