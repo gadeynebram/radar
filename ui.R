@@ -47,7 +47,7 @@ ui <- dashboardPage(
       a(
         strong("ABOUT RadaR"),
         height = 40,
-        href = "https://github.com/ceefluz/radar/blob/master/README.md",
+        href = "https://github.com/open-ams/radar/blob/master/README.md",
         title = "",
         target = "_blank"
       ),

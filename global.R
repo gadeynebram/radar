@@ -2,7 +2,7 @@
 
 # WELCOME TO RadaR
 
-#RadaR is licensed under the GNU General Public License (GPL) v2.0 (https://github.com/ceefluz/radar/blob/master/LICENSE)
+#RadaR is licensed under the GNU General Public License (GPL) v2.0 (https://github.com/open-ams/radar/blob/master/LICENSE)
 
 # INSTALL DEPENDENCIES ----------------------------------------------------
 
