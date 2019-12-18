@@ -2,13 +2,13 @@
 
 # WELCOME TO RadaR
 
-#RadaR is licensed under the GNU General Public License (GPL) v2.0 (https://github.com/open-ams/radar/blob/master/LICENSE)
+#RadaR is licensed under the GNU General Public License (GPL) v2.0 (https://github.com/open_ams/radar/blob/master/LICENSE)
 
 # INSTALL DEPENDENCIES ----------------------------------------------------
 
 source('dependencies.R')
 # load all packages
-# lapply(required_packages, require, character.only = TRUE)
+lapply(required_packages, require, character.only = TRUE)
 
 # DATA TRANSFORMATION AND NEW VARIABLES -----------------------------------
 
@@ -23,6 +23,11 @@ admissions <- admissions %>%
          LOS = as.integer(adm_end_date - adm_start_date + 1),
          age = as.integer(year(adm_start_date) - year(birth_date)))
 
+# antimicrobials 
+
+antimicrobials <- antimicrobials %>% 
+  mutate_at(vars(contains("date")), as.Date)
+
 
 # microbiology
 
@@ -34,24 +39,7 @@ microbiology <- microbiology %>%
          yearquarter_test = as.yearqtr(test_date))
 
 microbiology <- microbiology %>%
-  group_by(material) %>%
-  nest() %>%
-  mutate(data =
-           map(
-             data,
-             ~ mutate(
-               .x,
-               first_isolate =
-                 AMR::first_isolate(
-                   tbl = .,
-                   col_date = "test_date",
-                   col_patient_id = "id",
-                   col_mo = "mo"
-                 )
-             )
-           )
-  ) %>%
-  unnest()
+  mutate(first_isolate = first_isolate(., col_mo = "mo", col_date = "test_date",col_patient_id = "id", col_specimen = "material"))
 
 
 # Join datasets by overlaping time intervals
@@ -70,7 +58,7 @@ anti <- anti[
 micro <- micro[
   pat,
   on = .(id, test_date >= adm_start_date, test_date <= adm_end_date),
-  .(id, adm_id, test_date = x.test_date, test_number, adm_start_date, adm_end_date),
+  .(id, adm_id, test_date = x.test_date, test_number, adm_start_date, adm_end_date, material),
   nomatch = 0L
   ]
 
@@ -78,17 +66,29 @@ anti_first <- anti %>%
   group_by(id, adm_id) %>%
   summarise(min_ab_start = min(ab_start_date)) # first prescription date
 
-timing <- micro %>%
+bc_timing <- micro %>%
   left_join(anti_first) %>%
-  mutate(test_timing = as.integer(test_date - min_ab_start)) %>%
+  filter(material == "blood") %>% 
+  mutate(bc_timing = as.integer(test_date - min_ab_start)) %>%
   group_by(id, adm_id) %>%
-  filter(test_timing == min(test_timing, na.rm = FALSE)) %>%
+  filter(bc_timing == min(bc_timing, na.rm = FALSE)) %>%
   ungroup() %>%
-  select(id, adm_id, test_timing) %>%
+  select(id, adm_id, bc_timing) %>%
+  distinct()
+
+uc_timing <- micro %>%
+  left_join(anti_first) %>%
+  filter(material == "urine") %>% 
+  mutate(uc_timing = as.integer(test_date - min_ab_start)) %>%
+  group_by(id, adm_id) %>%
+  filter(uc_timing == min(uc_timing, na.rm = FALSE)) %>%
+  ungroup() %>%
+  select(id, adm_id, uc_timing) %>%
   distinct()
 
 admissions <- admissions %>%
-  left_join(timing)
+  left_join(bc_timing) %>% 
+  left_join(uc_timing)
 
 microbiology <- microbiology %>%
   semi_join(micro)
@@ -109,7 +109,7 @@ antimicrobials <- antimicrobials %>%
   left_join(
     AMR::antibiotics %>%
       select(
-        atc_code = atc, ab_type = official, ab_group = atc_group2
+        atc_code = atc, ab_type = name, ab_group = atc_group2
       ), by = "atc_code") %>%
   group_by(id, adm_id) %>%
   mutate(ddd_total = sum(ddd_per_prescription, na.rm = TRUE),
