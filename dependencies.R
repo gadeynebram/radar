@@ -15,7 +15,7 @@ if (length(new.packages)) {
 rm(new.packages)
 
 library(checkpoint)
-checkpoint(snapshotDate ='2019-10-16')
+checkpoint(snapshotDate ='2019-12-17')
 library(AMR)
 library(data.table)
 library(DT)
